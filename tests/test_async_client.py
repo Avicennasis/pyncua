@@ -56,3 +56,43 @@ class TestAsyncContextManager:
     async def test_async_with(self):
         async with AsyncNCUAClient() as client:
             assert client._http is not None
+
+
+class TestAsyncGetApiVersion:
+    @respx.mock
+    async def test_returns_version_string(self, client):
+        respx.get("https://mapping.ncua.gov/api/Search/version").mock(
+            return_value=httpx.Response(200, text="2.3.26086.1")
+        )
+        result = await client.get_api_version()
+        assert result == "2.3.26086.1"
+
+
+class TestAsyncGetCurrentCycle:
+    @respx.mock
+    async def test_returns_cycle_date(self, client):
+        respx.get("https://mapping.ncua.gov/api/DataQuery/GetCurrentCycle").mock(
+            return_value=httpx.Response(200, json="2026-03-31T00:00:00")
+        )
+        result = await client.get_current_cycle()
+        assert result == "2026-03-31T00:00:00"
+
+
+class TestAsyncGetCycleYears:
+    @respx.mock
+    async def test_returns_year_list(self, client):
+        respx.get("https://mapping.ncua.gov/api/DataQuery/GetCycleYears").mock(
+            return_value=httpx.Response(200, json=["All", "2026", "2025"])
+        )
+        result = await client.get_cycle_years()
+        assert result == ["All", "2026", "2025"]
+
+
+class TestAsyncGetMergerQueryYears:
+    @respx.mock
+    async def test_returns_year_list(self, client):
+        respx.get("https://mapping.ncua.gov/api/DataQuery/GetMergerQueryYears").mock(
+            return_value=httpx.Response(200, json=["All", "2026", "2025", "2024"])
+        )
+        result = await client.get_merger_query_years()
+        assert result == ["All", "2026", "2025", "2024"]

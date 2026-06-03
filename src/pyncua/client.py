@@ -62,6 +62,11 @@ class NCUAClient:
         self._check_status(resp)
         return self._decode(resp)
 
+    def _get_text(self, path: str) -> str:
+        resp = self._http.get(path)
+        self._check_status(resp)
+        return resp.text
+
     @staticmethod
     def _decode(resp: httpx.Response) -> dict:
         try:
@@ -82,6 +87,18 @@ class NCUAClient:
             return model_cls.model_validate(data)
         except ValidationError as e:
             raise NCUAError(f"Failed to parse response: {e}") from e
+
+    def get_api_version(self) -> str:
+        return self._get_text("/api/Search/version")
+
+    def get_current_cycle(self) -> str:
+        return self._get("/api/DataQuery/GetCurrentCycle")
+
+    def get_cycle_years(self) -> list[str]:
+        return self._get("/api/DataQuery/GetCycleYears")
+
+    def get_merger_query_years(self) -> list[str]:
+        return self._get("/api/DataQuery/GetMergerQueryYears")
 
     def find_offices_by_name(
         self, name: str, *, skip: int = 0, take: int = 100, **filters: bool
