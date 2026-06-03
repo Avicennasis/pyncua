@@ -33,9 +33,7 @@ def build_search_locations_body(
 ) -> dict:
     if search_type == SearchType.ADDRESS:
         if radius is not None and radius not in VALID_RADII:
-            raise NCUAValidationError(
-                f"radius must be one of {sorted(VALID_RADII)}, got {radius}"
-            )
+            raise NCUAValidationError(f"radius must be one of {sorted(VALID_RADII)}, got {radius}")
         rd_radius = radius if radius is not None else 25
     else:
         rd_radius = None

@@ -67,7 +67,9 @@ class NCUAClient:
         try:
             return resp.json()
         except Exception as e:
-            raise NCUAError(f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}") from e
+            raise NCUAError(
+                f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}"
+            ) from e
 
     def _check_status(self, resp: httpx.Response) -> None:
         if resp.status_code >= 500:
@@ -170,8 +172,11 @@ class NCUAClient:
         self, charter: int, cycle_date: str, is_corporate: bool = False
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadCallReport",
-            charter, cycle_date, is_corporate,
+            "",
+            "/api/CreditUnionDetails/GetDownloadCallReport",
+            charter,
+            cycle_date,
+            is_corporate,
         )
         data = self._get(url)
         if "fileContents" not in data:
@@ -186,8 +191,12 @@ class NCUAClient:
         is_snapshot: bool = False,
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadProfile",
-            charter, cycle_date, is_corporate, is_snapshot,
+            "",
+            "/api/CreditUnionDetails/GetDownloadProfile",
+            charter,
+            cycle_date,
+            is_corporate,
+            is_snapshot,
         )
         data = self._get(url)
         if "fileContents" not in data:

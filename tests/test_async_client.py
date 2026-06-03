@@ -27,17 +27,17 @@ class TestAsyncFindOfficesByName:
 class TestAsyncGetCreditUnion:
     @respx.mock
     async def test_returns_details(self, client, credit_union_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536").mock(
-            return_value=httpx.Response(200, json=credit_union_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536"
+        ).mock(return_value=httpx.Response(200, json=credit_union_details_json))
         details = await client.get_credit_union(5536)
         assert details.name == "NAVY FEDERAL CREDIT UNION"
 
     @respx.mock
     async def test_not_found(self, client, error_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999").mock(
-            return_value=httpx.Response(200, json=error_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999"
+        ).mock(return_value=httpx.Response(200, json=error_details_json))
         with pytest.raises(NCUANotFoundError):
             await client.get_credit_union(99999)
 

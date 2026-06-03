@@ -83,8 +83,12 @@ class TestFindOfficesByAddress:
     @respx.mock
     def test_invalid_search_raises_on_valid_false(self, client):
         bad_response = {
-            "latitude": 0, "longitude": 0, "valid": False,
-            "list": [], "totalResults": 0, "statusCode": 1,
+            "latitude": 0,
+            "longitude": 0,
+            "valid": False,
+            "list": [],
+            "totalResults": 0,
+            "statusCode": 1,
         }
         respx.post("https://mapping.ncua.gov/api/Search/GetSearchLocations").mock(
             return_value=httpx.Response(200, json=bad_response)
@@ -96,18 +100,18 @@ class TestFindOfficesByAddress:
 class TestGetCreditUnion:
     @respx.mock
     def test_returns_details(self, client, credit_union_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536").mock(
-            return_value=httpx.Response(200, json=credit_union_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536"
+        ).mock(return_value=httpx.Response(200, json=credit_union_details_json))
         details = client.get_credit_union(5536)
         assert details.name == "NAVY FEDERAL CREDIT UNION"
         assert details.charter_number == 5536
 
     @respx.mock
     def test_not_found_raises(self, client, error_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999").mock(
-            return_value=httpx.Response(200, json=error_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999"
+        ).mock(return_value=httpx.Response(200, json=error_details_json))
         with pytest.raises(NCUANotFoundError):
             client.get_credit_union(99999)
 
@@ -149,18 +153,18 @@ class TestDownloads:
     @respx.mock
     def test_call_report_returns_bytes(self, client):
         pdf_json = {"fileContents": [37, 80, 68, 70]}
-        respx.get(url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadCallReport/5536").mock(
-            return_value=httpx.Response(200, json=pdf_json)
-        )
+        respx.get(
+            url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadCallReport/5536"
+        ).mock(return_value=httpx.Response(200, json=pdf_json))
         result = client.download_call_report(5536, cycle_date="03/31/2026")
         assert result == b"%PDF"
 
     @respx.mock
     def test_profile_returns_bytes(self, client):
         pdf_json = {"fileContents": [37, 80, 68, 70]}
-        respx.get(url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadProfile/5536").mock(
-            return_value=httpx.Response(200, json=pdf_json)
-        )
+        respx.get(
+            url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadProfile/5536"
+        ).mock(return_value=httpx.Response(200, json=pdf_json))
         result = client.download_profile(5536, cycle_date="03/31/2026")
         assert result == b"%PDF"
 
@@ -169,7 +173,9 @@ class TestErrorHandling:
     @respx.mock
     def test_400_raises_validation_error(self, client):
         respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/-1").mock(
-            return_value=httpx.Response(400, json={"title": "Bad Request", "status": 400, "errors": {}})
+            return_value=httpx.Response(
+                400, json={"title": "Bad Request", "status": 400, "errors": {}}
+            )
         )
         with pytest.raises(NCUAValidationError):
             client.get_credit_union(-1)
