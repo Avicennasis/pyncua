@@ -1,5 +1,9 @@
 # pyncua
 
+[![CI](https://github.com/Avicennasis/pyncua/actions/workflows/test.yml/badge.svg)](https://github.com/Avicennasis/pyncua/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+
 Python client for the [NCUA Credit Union Mapping API](https://mapping.ncua.gov).
 
 ## Install
