@@ -120,9 +120,8 @@ class NCUAClient:
 
     def get_credit_union(self, charter: int) -> CreditUnionDetails:
         data = self._get(f"/api/CreditUnionDetails/GetCreditUnionDetails/{charter}")
-        if data.get("isError"):
-            msg = data.get("errorMessage", "Charter not found")
-            raise NCUANotFoundError(msg)
+        if data.get("isError") is True:
+            raise NCUANotFoundError(data.get("errorMessage") or "Charter not found")
         return self._parse(CreditUnionDetails, data)
 
     def search_names(
