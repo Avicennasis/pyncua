@@ -57,7 +57,7 @@ class AsyncNCUAClient:
         self._check_status(resp)
         return self._decode(resp)
 
-    async def _get(self, path: str) -> dict:
+    async def _get(self, path: str):
         resp = await self._http.get(path)
         self._check_status(resp)
         return self._decode(resp)

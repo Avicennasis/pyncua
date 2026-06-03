@@ -57,7 +57,7 @@ class NCUAClient:
         self._check_status(resp)
         return self._decode(resp)
 
-    def _get(self, path: str) -> dict:
+    def _get(self, path: str):
         resp = self._http.get(path)
         self._check_status(resp)
         return self._decode(resp)
