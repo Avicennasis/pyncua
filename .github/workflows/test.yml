@@ -55,7 +55,11 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.13"
-      - run: pip install ruff
+      # Installs the ruff pin declared in pyproject.toml's `dev` extra rather
+      # than a bare `pip install ruff`. An inline `ruff==X` here would go stale
+      # silently — Renovate does not parse `run:` commands, but it does track
+      # the pyproject pin.
+      - run: pip install -e '.[dev]'
       - run: ruff check src/ tests/
 
   pre-commit:
