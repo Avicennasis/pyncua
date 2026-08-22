@@ -4,3 +4,6 @@ __pycache__/
 dist/
 .ruff_cache/
 *.pyc
+
+# Feature Factory / stargazer context (local-only, never commit)
+.stargazer-*
