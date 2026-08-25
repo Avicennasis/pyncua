@@ -690,9 +690,7 @@ def build_search_locations_body(
 ) -> dict:
     if search_type == SearchType.ADDRESS:
         if radius is not None and radius not in VALID_RADII:
-            raise NCUAValidationError(
-                f"radius must be one of {sorted(VALID_RADII)}, got {radius}"
-            )
+            raise NCUAValidationError(f"radius must be one of {sorted(VALID_RADII)}, got {radius}")
         rd_radius = radius if radius is not None else 25
     else:
         rd_radius = None
@@ -866,8 +864,12 @@ class TestFindOfficesByAddress:
     @respx.mock
     def test_invalid_search_raises_on_valid_false(self, client):
         bad_response = {
-            "latitude": 0, "longitude": 0, "valid": False,
-            "list": [], "totalResults": 0, "statusCode": 1,
+            "latitude": 0,
+            "longitude": 0,
+            "valid": False,
+            "list": [],
+            "totalResults": 0,
+            "statusCode": 1,
         }
         respx.post("https://mapping.ncua.gov/api/Search/GetSearchLocations").mock(
             return_value=httpx.Response(200, json=bad_response)
@@ -879,18 +881,18 @@ class TestFindOfficesByAddress:
 class TestGetCreditUnion:
     @respx.mock
     def test_returns_details(self, client, credit_union_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536").mock(
-            return_value=httpx.Response(200, json=credit_union_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536"
+        ).mock(return_value=httpx.Response(200, json=credit_union_details_json))
         details = client.get_credit_union(5536)
         assert details.name == "NAVY FEDERAL CREDIT UNION"
         assert details.charter_number == 5536
 
     @respx.mock
     def test_not_found_raises(self, client, error_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999").mock(
-            return_value=httpx.Response(200, json=error_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999"
+        ).mock(return_value=httpx.Response(200, json=error_details_json))
         with pytest.raises(NCUANotFoundError):
             client.get_credit_union(99999)
 
@@ -932,18 +934,18 @@ class TestDownloads:
     @respx.mock
     def test_call_report_returns_bytes(self, client):
         pdf_json = {"fileContents": [37, 80, 68, 70]}
-        respx.get(url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadCallReport/5536").mock(
-            return_value=httpx.Response(200, json=pdf_json)
-        )
+        respx.get(
+            url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadCallReport/5536"
+        ).mock(return_value=httpx.Response(200, json=pdf_json))
         result = client.download_call_report(5536, cycle_date="03/31/2026")
         assert result == b"%PDF"
 
     @respx.mock
     def test_profile_returns_bytes(self, client):
         pdf_json = {"fileContents": [37, 80, 68, 70]}
-        respx.get(url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadProfile/5536").mock(
-            return_value=httpx.Response(200, json=pdf_json)
-        )
+        respx.get(
+            url__startswith="https://mapping.ncua.gov/api/CreditUnionDetails/GetDownloadProfile/5536"
+        ).mock(return_value=httpx.Response(200, json=pdf_json))
         result = client.download_profile(5536, cycle_date="03/31/2026")
         assert result == b"%PDF"
 
@@ -952,7 +954,9 @@ class TestErrorHandling:
     @respx.mock
     def test_400_raises_validation_error(self, client):
         respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/-1").mock(
-            return_value=httpx.Response(400, json={"title": "Bad Request", "status": 400, "errors": {}})
+            return_value=httpx.Response(
+                400, json={"title": "Bad Request", "status": 400, "errors": {}}
+            )
         )
         with pytest.raises(NCUAValidationError):
             client.get_credit_union(-1)
@@ -1051,7 +1055,9 @@ class NCUAClient:
         try:
             return resp.json()
         except Exception as e:
-            raise NCUAError(f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}") from e
+            raise NCUAError(
+                f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}"
+            ) from e
 
     def _check_status(self, resp: httpx.Response) -> None:
         if resp.status_code >= 500:
@@ -1154,8 +1160,11 @@ class NCUAClient:
         self, charter: int, cycle_date: str, is_corporate: bool = False
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadCallReport",
-            charter, cycle_date, is_corporate,
+            "",
+            "/api/CreditUnionDetails/GetDownloadCallReport",
+            charter,
+            cycle_date,
+            is_corporate,
         )
         data = self._get(url)
         if "fileContents" not in data:
@@ -1170,8 +1179,12 @@ class NCUAClient:
         is_snapshot: bool = False,
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadProfile",
-            charter, cycle_date, is_corporate, is_snapshot,
+            "",
+            "/api/CreditUnionDetails/GetDownloadProfile",
+            charter,
+            cycle_date,
+            is_corporate,
+            is_snapshot,
         )
         data = self._get(url)
         if "fileContents" not in data:
@@ -1233,17 +1246,17 @@ class TestAsyncFindOfficesByName:
 class TestAsyncGetCreditUnion:
     @respx.mock
     async def test_returns_details(self, client, credit_union_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536").mock(
-            return_value=httpx.Response(200, json=credit_union_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/5536"
+        ).mock(return_value=httpx.Response(200, json=credit_union_details_json))
         details = await client.get_credit_union(5536)
         assert details.name == "NAVY FEDERAL CREDIT UNION"
 
     @respx.mock
     async def test_not_found(self, client, error_details_json):
-        respx.get("https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999").mock(
-            return_value=httpx.Response(200, json=error_details_json)
-        )
+        respx.get(
+            "https://mapping.ncua.gov/api/CreditUnionDetails/GetCreditUnionDetails/99999"
+        ).mock(return_value=httpx.Response(200, json=error_details_json))
         with pytest.raises(NCUANotFoundError):
             await client.get_credit_union(99999)
 
@@ -1343,7 +1356,9 @@ class AsyncNCUAClient:
         try:
             return resp.json()
         except Exception as e:
-            raise NCUAError(f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}") from e
+            raise NCUAError(
+                f"Non-JSON response (HTTP {resp.status_code}): {resp.text[:200]}"
+            ) from e
 
     def _check_status(self, resp: httpx.Response) -> None:
         if resp.status_code >= 500:
@@ -1445,8 +1460,11 @@ class AsyncNCUAClient:
         self, charter: int, cycle_date: str, is_corporate: bool = False
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadCallReport",
-            charter, cycle_date, is_corporate,
+            "",
+            "/api/CreditUnionDetails/GetDownloadCallReport",
+            charter,
+            cycle_date,
+            is_corporate,
         )
         data = await self._get(url)
         if "fileContents" not in data:
@@ -1461,8 +1479,12 @@ class AsyncNCUAClient:
         is_snapshot: bool = False,
     ) -> bytes:
         url = build_download_url(
-            "", "/api/CreditUnionDetails/GetDownloadProfile",
-            charter, cycle_date, is_corporate, is_snapshot,
+            "",
+            "/api/CreditUnionDetails/GetDownloadProfile",
+            charter,
+            cycle_date,
+            is_corporate,
+            is_snapshot,
         )
         data = await self._get(url)
         if "fileContents" not in data:
@@ -1710,6 +1732,7 @@ with NCUAClient() as client:
 
     # Advanced filtered search
     from pyncua import CUType, CUStatus
+
     results = client.search_credit_unions(
         cu_type=CUType.FEDERAL,
         status=CUStatus.ACTIVE,

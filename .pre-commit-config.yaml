@@ -13,10 +13,11 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Keep EXACTLY in step with the ruff pin in pyproject.toml's `dev` extra —
-    # bump both together, or pre-commit and CI silently enforce different rule
-    # sets (which is exactly how CI went red while pre-commit stayed green).
-    rev: v0.15.22
+    # Keep EXACTLY in step with the ruff pin in pyproject.toml's `dev` extra.
+    # renovate.json groups this rev and that pin into one PR so they cannot
+    # drift again; if you bump either by hand, bump both. Divergence means
+    # pre-commit and CI silently enforce different rule sets.
+    rev: v0.16.4
     hooks:
       - id: ruff
         args: [--fix]

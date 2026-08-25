@@ -147,7 +147,8 @@ with NCUAClient(timeout=30.0) as client:
         cu_type=CUType.FEDERAL,
         status=CUStatus.ACTIVE,
         state="VA",
-        skip=0, take=20,
+        skip=0,
+        take=20,
     )
     online = client.get_online_credit_unions()
     pdf_bytes = client.download_call_report(5536, cycle_date="03/31/2026")
@@ -206,14 +207,15 @@ def search_credit_unions(
 def download_call_report(
     self,
     charter: int,
-    cycle_date: str,       # format: "MM/DD/YYYY" (e.g., "03/31/2026")
+    cycle_date: str,  # format: "MM/DD/YYYY" (e.g., "03/31/2026")
     is_corporate: bool = False,
 ) -> bytes: ...
+
 
 def download_profile(
     self,
     charter: int,
-    cycle_date: str,       # format: "MM/DD/YYYY" (e.g., "03/31/2026")
+    cycle_date: str,  # format: "MM/DD/YYYY" (e.g., "03/31/2026")
     is_corporate: bool = False,
     is_snapshot: bool = False,
 ) -> bytes: ...
@@ -245,7 +247,7 @@ model_config = ConfigDict(
     frozen=True,
     populate_by_name=True,
     alias_generator=to_camel,  # from pydantic.alias_generators
-    extra="ignore",            # tolerate new API fields without breaking
+    extra="ignore",  # tolerate new API fields without breaking
 )
 ```
 
@@ -308,15 +310,18 @@ class CUType(str, Enum):
     FEDERAL = "1"
     STATE = "2"
 
+
 class CUStatus(str, Enum):
     ACTIVE = "A"
     INACTIVE = "I"
+
 
 class Region(str, Enum):
     EASTERN = "1"
     SOUTHERN = "2"
     WESTERN = "3"
     ONES = "8"  # Office of National Examinations and Supervision
+
 
 class SearchType(str, Enum):
     ADDRESS = "address"
@@ -328,9 +333,15 @@ class SearchType(str, Enum):
 
 ```python
 class NCUAError(Exception): ...
-class NCUANotFoundError(NCUAError): ...       # charter not found (isError=true)
-class NCUAValidationError(NCUAError): ...     # 400 bad request
-class NCUAServerError(NCUAError): ...         # 5xx
+
+
+class NCUANotFoundError(NCUAError): ...  # charter not found (isError=true)
+
+
+class NCUAValidationError(NCUAError): ...  # 400 bad request
+
+
+class NCUAServerError(NCUAError): ...  # 5xx
 ```
 
 httpx timeout/connection errors are not wrapped — they pass through as `httpx.TimeoutException`, `httpx.ConnectError`, etc. HTTP 429 (rate limiting) also passes through as `httpx.HTTPStatusError` — no automatic retry. The client constructor accepts `timeout: float` (default 30.0) and `**kwargs` forwarded to `httpx.Client`/`httpx.AsyncClient` (e.g., `proxy`, `verify`, `cert`).

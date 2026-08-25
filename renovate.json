@@ -2,5 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Bump the ruff pin in pyproject.toml and the ruff-pre-commit rev in .pre-commit-config.yaml as a single PR. Renovate manages the pre-commit rev only when the pre-commit manager is enabled above; without both settings it updates pyproject alone and CI's ruff drifts ahead of pre-commit's, which is exactly how the two gates ended up enforcing different rule sets (see #17).",
+      "matchManagers": ["pep621", "pre-commit"],
+      "matchPackageNames": ["ruff", "astral-sh/ruff-pre-commit"],
+      "groupName": "ruff"
+    }
   ]
 }

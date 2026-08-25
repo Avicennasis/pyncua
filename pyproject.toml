@@ -40,14 +40,14 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "respx>=0.21",
-    # Pinned, not floating. The CI ruff job ran a bare `pip install ruff` while
-    # .pre-commit-config.yaml pinned an older rev, so the two gates enforced
-    # different linters. ruff 0.16.x expanded its DEFAULT rule selection (RUF022
-    # now fires on `__all__` ordering), which turned CI red on 2026-07-29 with no
-    # PR at fault while pre-commit stayed green. 0.15.22 is the newest release
-    # this tree passes clean. Keep EXACTLY in step with the ruff-pre-commit `rev`
-    # in .pre-commit-config.yaml and with uv.lock — bump all three together, as
-    # its own reviewable PR, or the gates diverge again.
+    # Pinned, not floating. Keep EXACTLY in step with the ruff-pre-commit `rev`
+    # in .pre-commit-config.yaml and with uv.lock. renovate.json groups all of
+    # them into a single PR (matchManagers pep621 + pre-commit), which is the
+    # guard against the 2026-07-29 failure: a bare `pip install ruff` in CI
+    # raced an older pre-commit rev, so the two gates enforced different rules
+    # and CI went red with no PR at fault. Bumping to 0.16.x also turns on
+    # formatting of Python code blocks inside Markdown — README.md and docs/
+    # are formatted accordingly, so a downgrade will report them as unformatted.
     "ruff==0.16.4",
     "pytest-asyncio>=0.23",
 ]
