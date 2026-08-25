@@ -31,10 +31,13 @@ with NCUAClient() as client:
 
     # Get full credit union details
     details = client.get_credit_union(5536)
-    print(f"{details.name}: {details.assets_formatted} in assets, {details.members_formatted} members")
+    print(
+        f"{details.name}: {details.assets_formatted} in assets, {details.members_formatted} members"
+    )
 
     # Advanced filtered search
     from pyncua import CUType, CUStatus
+
     results = client.search_credit_unions(
         cu_type=CUType.FEDERAL,
         status=CUStatus.ACTIVE,
@@ -62,7 +65,35 @@ with NCUAClient() as client:
 | `get_cycle_years()` | Available years for event data |
 | `get_merger_query_years()` | Available years for merger data |
 
-All search methods support `skip`/`take` pagination. `find_offices_by_*` methods accept boolean filter kwargs (`atm`, `drive_thru`, `bilingual`, etc.).
+`find_offices_by_*` methods accept boolean filter kwargs (`atm`, `drive_thru`, `bilingual`, etc.).
+
+### Choosing a search method
+
+`find_offices_by_address` geocodes server-side and returns **branch locations** near a point.
+`search_credit_unions` filters on the credit union's **headquarters city**. These give
+materially different answers: a search for `city="Pittsburgh"` misses Clearview
+(#9007, $2.2B in assets) because its charter address is Moon Township, even though it
+operates numerous Pittsburgh branches. For "who serves this area," use the office search.
+
+### Pagination
+
+All search methods take `skip`/`take`. **`take` is capped at 100** — the NCUA API
+silently truncates anything larger while still reporting the true count in
+`total_result_count`, so pyncua raises `NCUAValidationError` rather than hand back a
+short result set you might mistake for the whole answer. Page with `skip`:
+
+```python
+from pyncua import NCUAClient
+
+with NCUAClient() as client:
+    first = client.search_credit_unions(state="PA", take=100)
+    rows = list(first.results)
+    while len(rows) < first.total_result_count:
+        page = client.search_credit_unions(state="PA", skip=len(rows), take=100)
+        if not page.results:
+            break
+        rows.extend(page.results)
+```
 
 ## Async
 
@@ -87,6 +118,19 @@ with NCUAClient() as client:
         print("Charter number not found")
     except NCUAValidationError:
         print("Invalid request")
+```
+
+`NCUAValidationError` also covers client-side guards that fire before any request is
+made — an out-of-range `radius` or a `take` above 100.
+
+**A search that matches nothing is not an error.** NCUA returns `valid=True` with an
+empty list for an address it cannot resolve, so check the results rather than relying
+on an exception:
+
+```python
+result = client.find_offices_by_address("Pittsburgh, PA", radius=10)
+if not result.offices:
+    print("No offices found")
 ```
 
 ## Acknowledgments

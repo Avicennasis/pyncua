@@ -2,7 +2,9 @@ import os
 
 import pytest
 
-from pyncua import NCUAClient
+from pyncua import NCUAClient, NCUAValidationError
+from pyncua._constants import MAX_TAKE
+from pyncua._requests import build_detail_search_body
 
 pytestmark = pytest.mark.live
 
@@ -73,3 +75,49 @@ class TestLiveOnline:
         result = client.get_online_credit_unions()
         assert result.total_result_count > 0
         assert len(result.results) > 0
+
+
+class TestLivePaginationCap:
+    """Characterization tests for the server-side `take` cap.
+
+    The client-side guard in `_requests._validate_pagination` exists only
+    because NCUA truncates oversized `take` values without saying so. These
+    tests bypass the guard and talk to the API directly, so if NCUA ever
+    raises, lowers, or starts reporting the cap, they fail and tell us the
+    guard's constant needs revisiting.
+    """
+
+    def test_server_still_truncates_oversized_take(self, client):
+        # Build the body the normal way, then override `take` past the guard so
+        # this exercises the real server behaviour rather than a hand-copied
+        # body that could drift from build_detail_search_body.
+        body = build_detail_search_body(state="PA", take=MAX_TAKE)
+        body["take"] = 500
+
+        data = client._post("/api/ResearchCreditUnion/GetDetailSearch", body)
+        assert len(data["results"]) == MAX_TAKE, (
+            f"NCUA returned {len(data['results'])} rows for take=500; the "
+            f"server-side cap is no longer {MAX_TAKE} and MAX_TAKE needs updating."
+        )
+        # The true count is still reported, which is what makes the truncation
+        # silent rather than obvious.
+        assert data["totalResultCount"] > MAX_TAKE
+
+    def test_client_rejects_oversized_take(self, client):
+        with pytest.raises(NCUAValidationError, match="take must be <= 100"):
+            client.search_credit_unions(state="PA", take=MAX_TAKE + 1)
+
+    def test_skip_pagination_walks_the_whole_set(self, client):
+        first = client.search_credit_unions(state="PA", take=MAX_TAKE)
+        total = first.total_result_count
+        assert total > MAX_TAKE, "PA should have more than one page of credit unions"
+
+        rows = list(first.results)
+        while len(rows) < total:
+            page = client.search_credit_unions(state="PA", skip=len(rows), take=MAX_TAKE)
+            if not page.results:
+                break
+            rows.extend(page.results)
+
+        assert len(rows) == total
+        assert len({r.charter_number for r in rows}) == total, "pages overlapped"
