@@ -4,6 +4,13 @@ BASE_URL = "https://mapping.ncua.gov"
 
 VALID_RADII = frozenset({2, 5, 10, 15, 25, 60})
 
+# NCUA silently truncates any `take` above this to 100 rows while still
+# reporting the true unpaginated count in totalResultCount, so a caller who
+# asks for 500 gets 100 back with no error and no indication of the loss.
+# Measured identical across all four paginated endpoints (GetSearchLocations,
+# GetNameSearch, GetDetailSearch, and address search) on 2026-08-25.
+MAX_TAKE = 100
+
 
 class CUType(str, Enum):
     FEDERAL = "1"

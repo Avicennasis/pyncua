@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 import respx
@@ -33,10 +35,7 @@ class TestFindOfficesByName:
             return_value=httpx.Response(200, json=location_search_json)
         )
         client.find_offices_by_name("Test", skip=10, take=50)
-        body = route.calls[0].request.content
-        import json
-
-        parsed = json.loads(body)
+        parsed = json.loads(route.calls[0].request.content)
         assert parsed["searchText"] == "Test"
         assert parsed["rdSearchType"] == "cuname"
         assert parsed["rdSearchRadiusList"] is None
@@ -59,8 +58,6 @@ class TestFindOfficesByCharter:
             return_value=httpx.Response(200, json=location_search_json)
         )
         client.find_offices_by_charter(5571)
-        import json
-
         parsed = json.loads(route.calls[0].request.content)
         assert parsed["searchText"] == "5571"
         assert parsed["rdSearchType"] == "cunumber"
@@ -95,6 +92,32 @@ class TestFindOfficesByAddress:
         )
         with pytest.raises(NCUAValidationError, match="valid"):
             client.find_offices_by_address("not-a-real-place")
+
+    @respx.mock
+    def test_unresolvable_address_returns_empty_not_raise(self, client):
+        """An address NCUA cannot geocode comes back valid=True with zero offices.
+
+        Verified against the live API on 2026-08-25: searching a nonsense string
+        does NOT set valid=false. Callers must therefore treat an empty
+        `offices` list as the no-match signal; NCUAValidationError is reserved
+        for the rarer case where NCUA explicitly rejects the search.
+        """
+        respx.post("https://mapping.ncua.gov/api/Search/GetSearchLocations").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "latitude": 0.0,
+                    "longitude": 0.0,
+                    "valid": True,
+                    "list": [],
+                    "totalResults": 0,
+                    "statusCode": 0,
+                },
+            )
+        )
+        result = client.find_offices_by_address("zzzzz not a place qqqq", radius=10)
+        assert result.valid is True
+        assert result.offices == []
 
 
 class TestGetCreditUnion:
@@ -233,3 +256,49 @@ class TestGetMergerQueryYears:
         )
         result = client.get_merger_query_years()
         assert result == ["All", "2026", "2025", "2024"]
+
+
+class TestPaginationValidation:
+    """`take` above MAX_TAKE is truncated server-side with no error, so the
+    client rejects it up front rather than handing back a short result set."""
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda c: c.find_offices_by_name("Test", take=101),
+            lambda c: c.find_offices_by_charter(5536, take=101),
+            lambda c: c.find_offices_by_address("20005", take=101),
+            lambda c: c.search_names("Test", take=101),
+            lambda c: c.search_credit_unions(state="VA", take=101),
+        ],
+    )
+    def test_take_above_cap_raises(self, client, call):
+        with pytest.raises(NCUAValidationError, match="take must be <= 100"):
+            call(client)
+
+    @pytest.mark.parametrize("take", [0, -1])
+    def test_take_below_one_raises(self, client, take):
+        with pytest.raises(NCUAValidationError, match="take must be >= 1"):
+            client.find_offices_by_name("Test", take=take)
+
+    def test_negative_skip_raises(self, client):
+        with pytest.raises(NCUAValidationError, match="skip must be >= 0"):
+            client.find_offices_by_name("Test", skip=-1)
+
+    @respx.mock
+    def test_take_at_cap_is_allowed(self, client, location_search_json):
+        route = respx.post("https://mapping.ncua.gov/api/Search/GetSearchLocations").mock(
+            return_value=httpx.Response(200, json=location_search_json)
+        )
+        client.find_offices_by_name("Test", take=100)
+        assert json.loads(route.calls[0].request.content)["take"] == 100
+
+    def test_validation_happens_before_any_request(self, client):
+        """No HTTP call should be made for a request the client already knows is bad."""
+        with respx.mock:
+            route = respx.post("https://mapping.ncua.gov/api/Search/GetSearchLocations").mock(
+                return_value=httpx.Response(200, json={})
+            )
+            with pytest.raises(NCUAValidationError):
+                client.find_offices_by_name("Test", take=5000)
+            assert not route.called

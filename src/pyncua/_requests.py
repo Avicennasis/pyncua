@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pyncua._constants import VALID_RADII, SearchType
+from pyncua._constants import MAX_TAKE, VALID_RADII, SearchType
 from pyncua.exceptions import NCUAValidationError
 
 _FILTER_KWARG_TO_API = {
@@ -22,6 +22,26 @@ _FILTER_KWARG_TO_API = {
 }
 
 
+def _validate_pagination(skip: int, take: int) -> None:
+    """Reject pagination the API would silently mangle.
+
+    NCUA caps `take` at MAX_TAKE server-side but reports no error when it does —
+    it just returns fewer rows than asked for. Failing loudly here is the same
+    contract as the radius guard: better a clear exception than a short result
+    set the caller mistakes for the whole answer. Walk `skip` in MAX_TAKE-sized
+    steps to page through totalResultCount.
+    """
+    if skip < 0:
+        raise NCUAValidationError(f"skip must be >= 0, got {skip}")
+    if take < 1:
+        raise NCUAValidationError(f"take must be >= 1, got {take}")
+    if take > MAX_TAKE:
+        raise NCUAValidationError(
+            f"take must be <= {MAX_TAKE}, got {take}. The NCUA API silently "
+            f"truncates larger values to {MAX_TAKE} rows; page with skip instead."
+        )
+
+
 def build_search_locations_body(
     search_text: str,
     search_type: SearchType,
@@ -31,6 +51,7 @@ def build_search_locations_body(
     take: int = 100,
     **filters: bool,
 ) -> dict:
+    _validate_pagination(skip, take)
     if search_type == SearchType.ADDRESS:
         if radius is not None and radius not in VALID_RADII:
             raise NCUAValidationError(f"radius must be one of {sorted(VALID_RADII)}, got {radius}")
@@ -55,6 +76,7 @@ def build_search_locations_body(
 
 
 def build_name_search_body(name: str, *, skip: int = 0, take: int = 100) -> dict:
+    _validate_pagination(skip, take)
     return {"cuName": name, "skip": skip, "take": take}
 
 
@@ -73,6 +95,7 @@ def build_detail_search_body(
     skip: int = 0,
     take: int = 20,
 ) -> dict:
+    _validate_pagination(skip, take)
     return {
         "cuName": name,
         "cuType": cu_type,
