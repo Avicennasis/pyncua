@@ -16,7 +16,7 @@ repos:
     # Keep EXACTLY in step with the ruff pin in pyproject.toml's `dev` extra —
     # bump both together, or pre-commit and CI silently enforce different rule
     # sets (which is exactly how CI went red while pre-commit stayed green).
-    rev: v0.15.22
+    rev: v0.16.4
     hooks:
       - id: ruff
         args: [--fix]
