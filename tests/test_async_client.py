@@ -3,7 +3,7 @@ import pytest
 import respx
 
 from pyncua.async_client import AsyncNCUAClient
-from pyncua.exceptions import NCUANotFoundError
+from pyncua.exceptions import NCUANotFoundError, NCUAValidationError
 
 
 @pytest.fixture()
@@ -96,3 +96,26 @@ class TestAsyncGetMergerQueryYears:
         )
         result = await client.get_merger_query_years()
         assert result == ["All", "2026", "2025", "2024"]
+
+
+class TestAsyncPaginationValidation:
+    """The guard lives in the shared body builders, so the async client must
+    reject the same inputs as the sync one — this pins that they stay in step."""
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda c: c.find_offices_by_name("Test", take=101),
+            lambda c: c.find_offices_by_charter(5536, take=101),
+            lambda c: c.find_offices_by_address("20005", take=101),
+            lambda c: c.search_names("Test", take=101),
+            lambda c: c.search_credit_unions(state="VA", take=101),
+        ],
+    )
+    async def test_take_above_cap_raises(self, client, call):
+        with pytest.raises(NCUAValidationError, match="take must be <= 100"):
+            await call(client)
+
+    async def test_negative_skip_raises(self, client):
+        with pytest.raises(NCUAValidationError, match="skip must be >= 0"):
+            await client.search_names("Test", skip=-1)
