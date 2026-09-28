@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-09-28
+
 ### Fixed
 - Realign the `ruff-pre-commit` `rev` in `.pre-commit-config.yaml` with the
   `ruff==0.16.4` pin in `pyproject.toml` and `uv.lock`. The three had drifted:
